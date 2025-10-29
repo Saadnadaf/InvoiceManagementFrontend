@@ -8,6 +8,7 @@ import InvoiceSummary from "./Components/InvoiceSummary";
 import InvoiceTable from "./Components/InvoiceTable";
 import Invoicelist from "./Components/Invoicelist";
 import Navbar from "./Components/Navbar";
+import Login from "./Components/Login";
 
 Modal.setAppElement("#root");
 
@@ -18,6 +19,23 @@ function App() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [showModal, setShowModal] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    setIsAuthenticated(!!token);
+  }, []);
+
+  const handleLoginSuccess = () => {
+    setIsAuthenticated(true);
+    fetchInvoices();
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    setIsAuthenticated(false);
+    setInvoices([]);
+  };
 
   const fetchInvoices = async () => {
     try {
@@ -32,8 +50,8 @@ function App() {
   };
 
   useEffect(() => {
-    fetchInvoices();
-  }, []);
+    if (isAuthenticated) fetchInvoices();
+  }, [isAuthenticated]);
 
   const handleSelectInvoice = (invoice, mode) => {
     setSelectedinvoice(invoice);
@@ -64,9 +82,13 @@ function App() {
     setMode(null);
     setSelectedinvoice(null);
   };
+
+  if (!isAuthenticated) {
+    return <Login onLoginSuccess={handleLoginSuccess} />;
+  }
   return (
     <div className="bg-gray-200 min-h-screen">
-      <Navbar />
+      <Navbar onLogout={handleLogout} />
       <main className="container mx-auto my-6 px-4">
         <div className="flex justify-end mb-4">
           <button
@@ -124,6 +146,8 @@ function App() {
             </Modal>
           )}
         </AnimatePresence>
+
+        {/* Now its my turn  */}
 
         {/* Modal end */}
 
