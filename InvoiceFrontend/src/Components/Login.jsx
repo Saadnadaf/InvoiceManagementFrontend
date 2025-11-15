@@ -1,0 +1,85 @@
+import React from "react";
+import { useState } from "react";
+import api from "../lib/api";
+import { useNavigate } from "react-router-dom";
+import PasswordInput from "./PasswordInput";
+import { motion } from "framer-motion";
+import AuthLayout from "./AuthLayout";
+
+const Login = ({ onLoginSuccess }) => {
+  const [usernameOrEmail, setUsernameOrEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const navigate = useNavigate();
+
+  const handleLogin = async (e) => {
+    e.preventDefault();
+    setError("");
+
+    try {
+      const response = await api.post("/auth/login", {
+        usernameOrEmail,
+        password,
+      });
+
+      const token = response.data.token;
+      localStorage.setItem("token", token);
+
+      onLoginSuccess();
+
+    } catch (err) {
+      console.error(err);
+      setError("Login failed. Please check your credentials.");
+    }
+  };
+  return (
+    <AuthLayout
+      title="Welcome Back"
+      subtitle="Login"
+      // footerText="Don’t have an account?"
+      // footerLinkText="Register"
+      // footerAction="/register"
+    >
+      <form onSubmit={handleLogin} className="space-y-5">
+        <input
+          type="text"
+          placeholder="Username or Email"
+          value={usernameOrEmail}
+          onChange={(e) => setUsernameOrEmail(e.target.value)}
+          className="w-full border border-gray-300 rounded-md p-3 focus:outline-none focus:ring-2 focus:ring-cyan-400 focus:border-transparent transition"
+          required
+        />
+        <PasswordInput
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          placeholder="Password"
+        />
+
+        {error && (
+          <motion.p
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="text-red-500 text-sm text-center"
+          >
+            {error}
+          </motion.p>
+        )}
+
+        <motion.button
+          whileHover={{ scale: 1.03 }}
+          whileTap={{ scale: 0.97 }}
+          type="submit"
+          className="w-full bg-gradient-to-r from-teal-500 to-blue-500 text-white font-semibold py-2 rounded-md shadow-md hover:shadow-lg transition-all"
+        >
+          Login
+        </motion.button>
+
+        <p onClick={() => navigate("/forgot-password")} className="text-sm text-center text-blue-600 mt-3 cursor-pointer hover:underline">
+          Forgot password?
+        </p>
+      </form>
+    </AuthLayout>
+  );
+};
+
+export default Login;

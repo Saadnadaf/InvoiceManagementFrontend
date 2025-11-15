@@ -2,20 +2,22 @@ import React, { useEffect, useState } from "react";
 import InvoiceTable from "./InvoiceTable";
 import { createInvoice, updateInvoice } from "../Services/InvoiceService";
 
-function InvoiceForm({ invoice, onSaveSuccess , mode }) {
+function InvoiceForm({ invoice, onSaveSuccess, mode }) {
   const [invoicenumber, setInvoiceNumber] = useState("");
   const [customername, setCustomerName] = useState("");
   const [invoicedate, setInvoiceDate] = useState("");
+  const [customeraddress, setCustomerAddress] = useState("");
+  const [customerphone, setCustomerPhone] = useState("");
+  const [customeremail, setCustomerEmail] = useState("");
+  const [deliveryfrom, setDeliveryFrom] = useState("");
 
   const [items, setItems] = useState([
     { id: Date.now(), productname: "", quantity: 1, unitprice: 0 },
   ]);
 
   const [itemsvalid, setItemsValid] = useState(false);
-
   const [errors, setErrors] = useState({});
   const [isvalid, setIsValid] = useState(false);
-
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -31,6 +33,27 @@ function InvoiceForm({ invoice, onSaveSuccess , mode }) {
     } else if (customername.length > 50) {
       newErrors.customername = "Max 50 characters allowed";
     }
+
+    if (!customeraddress.trim()) {
+      newErrors.customeraddress = "Customer address is required";
+    }
+
+    if (!customerphone.trim()) {
+      newErrors.customerphone = "Customer phone is required";
+    } else if (!/^\d{10}$/.test(customerphone)) {
+      newErrors.customerphone = "Phone must be 10 digits";
+    }
+
+    if (!customeremail.trim()) {
+      newErrors.customeremail = "Customer email is required";
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(customeremail)) {
+      newErrors.customeremail = "Invalid email address";
+    }
+
+    if (!deliveryfrom.trim()) {
+      newErrors.deliveryfrom = "Delivery from address is required";
+    }
+
     if (!invoicedate) {
       newErrors.invoicedate = "Invoice Date is required";
     }
@@ -42,9 +65,18 @@ function InvoiceForm({ invoice, onSaveSuccess , mode }) {
     }
 
     setErrors(newErrors);
-
     setIsValid(Object.keys(newErrors).length === 0);
-  }, [invoicenumber, customername, invoicedate, items, itemsvalid]);
+  }, [
+    invoicenumber,
+    customername,
+    customeraddress,
+    customerphone,
+    customeremail,
+    deliveryfrom,
+    invoicedate,
+    items,
+    itemsvalid,
+  ]);
 
   useEffect(() => {
     if (invoice) {
@@ -53,6 +85,12 @@ function InvoiceForm({ invoice, onSaveSuccess , mode }) {
       setInvoiceDate(
         invoice.InvoiceDate ? invoice.InvoiceDate.split("T")[0] : ""
       );
+
+      setCustomerAddress(invoice.CustomerAddress || "");
+      setCustomerPhone(invoice.CustomerPhone || "");
+      setCustomerEmail(invoice.CustomerEmail || "");
+      setDeliveryFrom(invoice.DeliveryFrom || "");
+
       setItems(
         invoice.InvoiceItems?.map((it, idx) => ({
           id: idx + 1,
@@ -65,6 +103,11 @@ function InvoiceForm({ invoice, onSaveSuccess , mode }) {
       setInvoiceNumber("");
       setCustomerName("");
       setInvoiceDate("");
+      setCustomerAddress("");
+      setCustomerPhone("");
+      setCustomerEmail("");
+      setDeliveryFrom("");
+
       setItems([
         { id: Date.now(), productname: "", quantity: 1, unitprice: 0 },
       ]);
@@ -87,6 +130,10 @@ function InvoiceForm({ invoice, onSaveSuccess , mode }) {
     const payload = {
       InvoiceNumber: invoicenumber,
       CustomerName: customername,
+      CustomerAddress: customeraddress,
+      CustomerPhone: customerphone,
+      CustomerEmail: customeremail,
+      DeliveryFrom: deliveryfrom,
       InvoiceDate: new Date(invoicedate).toISOString(),
       InvoiceItems: items.map((it) => ({
         ProductName: it.productname,
@@ -95,7 +142,7 @@ function InvoiceForm({ invoice, onSaveSuccess , mode }) {
       })),
     };
 
-    if(mode === "edit"){
+    if (mode === "edit") {
       payload.InvoiceNumber = invoice.InvoiceNumber;
     }
 
@@ -132,15 +179,26 @@ function InvoiceForm({ invoice, onSaveSuccess , mode }) {
     }
   };
 
+  const getInputClasses = (fieldError) => 
+    `w-full px-3 py-2 border rounded-lg transition duration-200 
+    bg-white dark:bg-gray-700 
+    text-gray-900 dark:text-gray-100
+    focus:outline-none focus:ring-2 
+    ${
+      fieldError
+        ? "border-red-400 dark:border-red-500 focus:border-red-500 focus:ring-red-100 dark:focus:ring-red-900"
+        : "border-gray-300 dark:border-gray-600 focus:border-blue-500 dark:focus:border-blue-400 focus:ring-blue-100 dark:focus:ring-blue-900"
+    }`;
+
   return (
-    <div className="bg-white p-6 rounded-xl shadow-md mb-6 ">
-      <h2 className="text-lg font-semibold mb-4">
-        {invoice ? "Edit Invoice " : "Create new Invoice"}
+    <div className="bg-white dark:bg-gray-800 p-8 rounded-3xl shadow-2xl mb-6 border border-gray-100 dark:border-gray-700">
+      <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-100 mb-6 border-b dark:border-gray-700 pb-3">
+        {invoice ? "Edit Invoice" : "Create new Invoice"}
       </h2>
-      <form className="space-y-6" onSubmit={handleSubmit}>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <form className="space-y-8" onSubmit={handleSubmit}>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
           <div>
-            <label className="block mb-1 text-sm font-medium">
+            <label className="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300">
               Customer Name
             </label>
             <input
@@ -148,15 +206,89 @@ function InvoiceForm({ invoice, onSaveSuccess , mode }) {
               value={customername}
               onChange={(e) => setCustomerName(e.target.value)}
               placeholder="Enter customer name"
-              className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring  focus:ring-blue-300 "
+              className={getInputClasses(errors.customername)}
             />
             {errors.customername && (
-              <p className="text-red-500 text-sm mt-1">{errors.customername}</p>
+              <p className="text-red-500 dark:text-red-400 text-sm mt-1 font-medium">
+                {errors.customername}
+              </p>
             )}
           </div>
 
           <div>
-            <label className="block mb-1 text-sm font-medium">
+            <label className="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300">
+              Customer Address
+            </label>
+            <input
+              type="text"
+              value={customeraddress}
+              onChange={(e) => setCustomerAddress(e.target.value)}
+              placeholder="Enter customer address"
+              className={getInputClasses(errors.customeraddress)}
+            />
+            {errors.customeraddress && (
+              <p className="text-red-500 dark:text-red-400 text-xs mt-1 font-medium">
+                {errors.customeraddress}
+              </p>
+            )}
+          </div>
+
+          <div>
+            <label className="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300">
+              Customer Phone
+            </label>
+            <input
+              type="text"
+              value={customerphone}
+              onChange={(e) => setCustomerPhone(e.target.value)}
+              placeholder="Enter phone number"
+              className={getInputClasses(errors.customerphone)}
+            />
+            {errors.customerphone && (
+              <p className="text-red-500 dark:text-red-400 text-sm mt-1 font-medium">
+                {errors.customerphone}
+              </p>
+            )}
+          </div>
+
+          <div>
+            <label className="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300">
+              Customer Email
+            </label>
+            <input
+              type="email"
+              value={customeremail}
+              onChange={(e) => setCustomerEmail(e.target.value)}
+              placeholder="Enter email"
+              className={getInputClasses(errors.customeremail)}
+            />
+            {errors.customeremail && (
+              <p className="text-red-500 dark:text-red-400 text-xs mt-1 font-medium">
+                {errors.customeremail}
+              </p>
+            )}
+          </div>
+
+          <div>
+            <label className="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300">
+              Delivery From
+            </label>
+            <input
+              type="text"
+              value={deliveryfrom}
+              onChange={(e) => setDeliveryFrom(e.target.value)}
+              placeholder="Enter delivery address"
+              className={getInputClasses(errors.deliveryfrom)}
+            />
+            {errors.deliveryfrom && (
+              <p className="text-red-500 dark:text-red-400 text-xs mt-1 font-medium">
+                {errors.deliveryfrom}
+              </p>
+            )}
+          </div>
+
+          <div>
+            <label className="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300">
               Invoice Date
             </label>
             <input
@@ -164,15 +296,17 @@ function InvoiceForm({ invoice, onSaveSuccess , mode }) {
               value={invoicedate}
               onChange={(e) => setInvoiceDate(e.target.value)}
               placeholder="Enter date"
-              className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring focus:ring-blue-300"
+              className={getInputClasses(errors.invoicedate)}
             />
             {errors.invoicedate && (
-              <p className="text-red-500 text-sm mt-1">{errors.invoicedate}</p>
+              <p className="text-red-500 dark:text-red-400 text-xs mt-1 font-medium">
+                {errors.invoicedate}
+              </p>
             )}
           </div>
 
           <div>
-            <label className="block mb-1 text-sm font-medium">
+            <label className="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300">
               Invoice Number
             </label>
             <input
@@ -181,10 +315,12 @@ function InvoiceForm({ invoice, onSaveSuccess , mode }) {
               onChange={(e) => setInvoiceNumber(e.target.value)}
               placeholder="INV-001"
               disabled={mode === "edit"}
-              className="w-full px-3 py-2 border rounded-lg  focus:outline-none focus:ring focus:ring-blue-300"
+              className={`${getInputClasses(errors.invoicenumber)} ${
+                mode === "edit" ? "bg-gray-100 dark:bg-gray-600 cursor-not-allowed" : ""
+              }`}
             />
             {errors.invoicenumber && (
-              <p className="text-red-500 text-sm mt-1">
+              <p className="text-red-500 dark:text-red-400 text-xs mt-1 font-medium">
                 {errors.invoicenumber}
               </p>
             )}
@@ -197,18 +333,20 @@ function InvoiceForm({ invoice, onSaveSuccess , mode }) {
             onValidityChange={handleitemValidityChange}
           />
           {errors.items && (
-            <p className="text-red-500 text-sm -mt-2">{errors.items}</p>
+            <p className="text-red-500 dark:text-red-400 text-sm mt-3 font-medium">
+              {errors.items}
+            </p>
           )}
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-4 pt-4 border-t dark:border-gray-700">
           <button
             type="submit"
             disabled={!isvalid || loading}
-            className={`px-4 py-2 rounded-lg text-white ${
+            className={`px-6 py-2 rounded-xl text-white font-semibold shadow-md transition duration-200 transform hover:scale-[1.01] ${
               isvalid && !loading
-                ? "bg-blue-600 hover:bg-blue-700"
-                : "bg-gray-400 cursor-not-allowed"
+                ? "bg-green-600 hover:bg-green-700 dark:bg-green-700 dark:hover:bg-green-800"
+                : "bg-gray-400 dark:bg-gray-600 cursor-not-allowed"
             }`}
           >
             {loading
@@ -223,14 +361,18 @@ function InvoiceForm({ invoice, onSaveSuccess , mode }) {
             onClick={() => {
               setInvoiceNumber("");
               setCustomerName("");
+              setCustomerAddress("");
+              setCustomerPhone("");
+              setCustomerEmail("");
+              setDeliveryFrom("");
               setInvoiceDate("");
               setItems([
                 { id: Date.now(), productname: "", quantity: 1, unitprice: 0 },
               ]);
             }}
-            className="px-4 py-2 rounded-lg bg-gray-200 hover:bg-gray-300"
+            className="px-6 py-2 rounded-xl bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 font-medium hover:bg-gray-300 dark:hover:bg-gray-600 transition duration-200"
           >
-            Clear
+            Clear Form
           </button>
         </div>
       </form>
