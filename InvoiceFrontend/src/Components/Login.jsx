@@ -17,7 +17,7 @@ const Login = ({ onLoginSuccess }) => {
     setError("");
 
     try {
-      const response = await api.post("/auth/login", {
+      const response = await api.post("/Auth/login", {
         usernameOrEmail,
         password,
       });
