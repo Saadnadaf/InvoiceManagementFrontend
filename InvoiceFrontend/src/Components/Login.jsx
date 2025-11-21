@@ -10,7 +10,7 @@ const Login = ({ onLoginSuccess }) => {
   const [usernameOrEmail, setUsernameOrEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
-  const [loadin, setLoading] = useState(false);
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const start = Date.now();
   const elapsed = Date.now() - start;
